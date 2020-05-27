@@ -12,38 +12,33 @@ void getUserInput() async {
 
   // Validate directory and continue
   if (await FileSystemEntity.isDirectory(value)) {
-    var listOfDirs = await findNodeModuleFolders(value);
-    var len = listOfDirs.length;
-    print('Found node_modules: $len');
-
+    findNodeModuleFolders(value);
   } else {
     stderr.writeln('error: $value is not a valid directory');
     exitCode = 2;
   }
 }
 
-Future<List<String>> findNodeModuleFolders(String value){
+void findNodeModuleFolders(String value) {
   var path = Directory(value);
-  var found = <String>[];
   path
       .list(recursive: true, followLinks: false)
       .listen((FileSystemEntity entity) async {
-          if (await FileSystemEntity.isDirectory(entity.path)) {
-              List pathList = entity.path.split(getSlashForPlatform());
-              // Don't traverse hidden folders such as .git
-              if (!(pathList.last).toString().startsWith('.')) {
-                if (pathList.last == 'node_modules') {
-                  found.add(entity.path);
-                  print(entity.path);
-                }
-              }
+    if (await FileSystemEntity.isDirectory(entity.path)) {
+      List pathList = entity.path.split(getSlashForPlatform());
+      // Don't traverse hidden folders such as .git
+      if (!(pathList.last).toString().startsWith('.')) {
+        if (pathList.last == 'node_modules') {
+          try {
+            await Directory(entity.path).delete(recursive: true);
+            print(entity.path);
+          } catch (err) {
+            print(err);
           }
+        }
+      }
+    }
   });
-
-  return Future.value(found);
-
-
-
 }
 
 String getSlashForPlatform() {
