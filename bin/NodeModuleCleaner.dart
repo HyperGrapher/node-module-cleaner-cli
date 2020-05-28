@@ -15,12 +15,17 @@ void getUserInput() async {
   if (await FileSystemEntity.isDirectory(value)) {
     var listOfDirs = await findNodeModuleFolders(value);
     var len = listOfDirs.length;
+    print('');
     print('Number of found node_modules: $len');
+    print('');
 
     if (len > 0) {
-      print('Deleting');
+      deleteFolders(listOfDirs);
     } else {
-      print('No folder is deleted!!');
+      print('No folder to delete!!');
+      print('');
+      stdout.write('Press ENTER to exit: ');
+      var ex = stdin.readLineSync(encoding: Encoding.getByName('utf-8'));
     }
   } else {
     stderr.writeln('error: Given path is not a valid directory');
@@ -44,7 +49,13 @@ Future<List<String>> findNodeModuleFolders(String value) async {
       // Don't traverse hidden folders such as .git
       if (!(pathList.last).toString().startsWith('.')) {
         if (pathList.last == 'node_modules') {
-          folderList.add(entity.path);
+          // If the duplicate value is 0 then it's the node_modules root
+          // if value is bigger than 0
+          // then it must be a directory inside node_modules folder.
+          // We only need the root folder so add it to the list for deletion.
+          if (countDuplicates(pathList) == 0) {
+            folderList.add(entity.path);
+          }
         }
       }
     }
@@ -60,6 +71,37 @@ Future<List<String>> findNodeModuleFolders(String value) async {
   // So you can await it and
   // get the data when it is complete.
   return completer.future;
+}
+
+// TODO only look for duplicates of 'node_modules' .
+int countDuplicates(List<String> duplicates) {
+  return duplicates.length - duplicates.toSet().toList().length;
+}
+
+void deleteFolders(List<String> deleteList) async {
+  for (var item in deleteList) {
+    print(item);
+  }
+
+  print('');
+  print('');
+  stdout.write('Enter Y to delete listed folders: ');
+  var value = stdin.readLineSync(encoding: Encoding.getByName('utf-8'));
+
+  if (value.trim().toLowerCase() == 'y') {
+    for (var item in deleteList) {
+      try {
+        await Directory(item).delete(recursive: true);
+        print('Deleted: $item');
+      } catch (err) {
+        print(err);
+      }
+    }
+  }
+
+  print('');
+  stdout.write('Press ENTER to exit: ');
+  var ex = stdin.readLineSync(encoding: Encoding.getByName('utf-8'));
 }
 
 // Return directory slash according to host platform
